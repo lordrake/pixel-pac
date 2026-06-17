@@ -8,3 +8,4 @@ Add local conventions, validation commands, safety constraints, handoff rules, a
 
 - After a successful `project-qa-review` verdict (`Pass` or `Pass with follow-ups`), commit the reviewed code and workflow artifact changes unless the user explicitly asks not to.
 - Do not mark a task `Complete` unless the user explicitly asks for completion, even when the QA review passes and the changes are committed.
+- For tasks nested under an epic tracker, use `./.project-workflow/cli/workflow epic status --epic-id <EPIC-ID> --id <TASK-ID> --to <STATUS>` instead of the global `workflow task status` command.

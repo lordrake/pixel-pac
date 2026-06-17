@@ -77,9 +77,11 @@ Layer power-up state, vulnerable enemy interactions, lives, scoring, and end-sta
 
 ## Retro
 
-- Reusable lessons: Pending
-- Conventions or agent assets updated: Pending
-- Follow-up tasks: Pending
+- Date: 2026-06-17
+- Reusable lessons: Keep gameplay rules in `src/gameState.js` and cover round-loop edge cases in `tests/gameplay.test.mjs`; visual Phaser cues should remain a projection of state rather than owning game rules.
+- Conventions or agent assets updated: `.project-workflow/guidance.md` now records that epic-child tasks should use `workflow epic status` for lifecycle updates.
+- Follow-up tasks: Consider a later performance/build task if the Phaser bundle-size warning becomes a delivery concern.
+- Missed in-scope work: None.
 
 ## Notes
 
