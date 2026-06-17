@@ -17,11 +17,13 @@ export function createUi() {
 export function renderState(ui, state) {
   ui.scoreLabel.textContent = state.score.toString().padStart(4, "0");
   ui.livesLabel.textContent = String(state.lives);
-  ui.statusLabel.textContent = getStatusText(state.status);
+  ui.statusLabel.textContent = getStatusText(state);
   ui.shell.classList.toggle("is-live", state.status === "live");
   ui.shell.classList.toggle("is-reset", state.status === "reset");
   ui.shell.classList.toggle("is-clear", state.status === "clear");
   ui.shell.classList.toggle("is-hit", state.status === "hit");
+  ui.shell.classList.toggle("is-game-over", state.status === "game-over");
+  ui.shell.classList.toggle("is-vulnerable", state.status === "live" && state.vulnerableTicks > 0);
 }
 
 export function renderCharacters(ui, state) {
@@ -62,10 +64,12 @@ function createCharacterBadgeContent(character, mode = "") {
   return fragment;
 }
 
-function getStatusText(status) {
-  if (status === "live") return "Round Live";
-  if (status === "reset") return "Reset";
-  if (status === "clear") return "Maze Clear";
-  if (status === "hit") return "Player Hit";
+function getStatusText(state) {
+  if (state.status === "live" && state.vulnerableTicks > 0) return `Power ${state.vulnerableTicks}`;
+  if (state.status === "live") return "Round Live";
+  if (state.status === "reset") return "Reset";
+  if (state.status === "clear") return "Maze Clear";
+  if (state.status === "hit") return "Life Lost";
+  if (state.status === "game-over") return "Game Over";
   return "Ready";
 }

@@ -142,11 +142,14 @@ export class PixelPacScene extends Phaser.Scene {
   renderEnemy(enemy) {
     const center = this.getTileCenter(enemy.tile);
     const config = getEnemyConfig(enemy.id);
+    const fillColor = enemy.mode === "vulnerable" ? colors.vulnerable : config.color;
     const body = this.add
-      .rectangle(center.x, center.y, tileSize * 0.7, tileSize * 0.7, config.color)
+      .rectangle(center.x, center.y, tileSize * 0.7, tileSize * 0.7, fillColor)
       .setOrigin(0.5);
 
-    if (enemy.mode === "chase") {
+    if (enemy.mode === "vulnerable") {
+      body.setStrokeStyle(4, colors.power);
+    } else if (enemy.mode === "chase") {
       body.setStrokeStyle(3, colors.ink);
     } else {
       body.setStrokeStyle(4, colors.black);

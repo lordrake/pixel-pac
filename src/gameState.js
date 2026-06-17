@@ -1,6 +1,8 @@
 import { characterConfig, directions, mazeMap } from "./gameData.js";
 
 export const totalCollectibles = countCollectibles();
+export const vulnerableDurationTicks = 8;
+export const vulnerableEnemyScore = 200;
 
 export function createInitialState() {
   return {
@@ -12,7 +14,9 @@ export function createInitialState() {
     enemies: createInitialEnemies(),
     enemyStep: 0,
     hitBy: null,
-    hitCount: 0
+    hitCount: 0,
+    vulnerableTicks: 0,
+    eatenCount: 0
   };
 }
 
@@ -28,11 +32,14 @@ export function createInitialEnemies() {
 }
 
 export function startRound(currentState) {
-  const state = currentState.status === "clear" || currentState.status === "hit"
+  const state = currentState.status === "clear" || currentState.status === "game-over"
     ? createInitialState()
     : currentState;
 
+  if (state.status === "hit") resetActorsForNextLife(state);
+
   state.status = "live";
+  state.hitBy = null;
   collectCurrentTile(state);
   checkPlayerEnemyCollision(state);
   return state;
@@ -56,7 +63,7 @@ export function movePlayer(state, direction) {
 
   state.playerTile = nextTile;
   collectCurrentTile(state);
-  checkPlayerEnemyCollision(state);
+  if (state.status === "live") checkPlayerEnemyCollision(state);
   return true;
 }
 
@@ -66,12 +73,13 @@ export function tickEnemies(state) {
   state.enemyStep += 1;
   state.enemies = state.enemies.map((enemy) => moveEnemy(state, enemy));
   checkPlayerEnemyCollision(state);
+  if (state.status === "live") tickVulnerableTimer(state);
   return true;
 }
 
 export function moveEnemy(state, enemy) {
   const character = getEnemyConfig(enemy.id);
-  const mode = character.behavior;
+  const mode = getEnemyMode(state, character);
   const nextTile = mode === "chase" ? chooseChaseTile(state, enemy.tile) : chooseRoamTile(state, enemy);
 
   return {
@@ -89,26 +97,72 @@ export function collectCurrentTile(state) {
   if (cell === "." || cell === "o") {
     state.collectedTiles.add(tileKey);
     state.score += cell === "o" ? 50 : 10;
+    if (cell === "o") activatePowerUp(state);
+
+    if (state.collectedTiles.size === totalCollectibles) {
+      state.status = "clear";
+      state.vulnerableTicks = 0;
+      updateEnemyModes(state);
+    }
+
+    return true;
   }
 
-  if (state.collectedTiles.size === totalCollectibles) {
-    state.status = "clear";
-  }
-
-  return true;
+  return false;
 }
 
 export function checkPlayerEnemyCollision(state) {
-  const enemy = state.enemies.find((item) => {
+  if (state.status !== "live") return false;
+
+  const collidedEnemies = state.enemies.filter((item) => {
     return item.tile.x === state.playerTile.x && item.tile.y === state.playerTile.y;
   });
 
-  if (!enemy) return false;
+  if (collidedEnemies.length === 0) return false;
 
+  if (state.vulnerableTicks > 0) {
+    eatVulnerableEnemies(state, collidedEnemies);
+    return true;
+  }
+
+  const enemy = collidedEnemies[0];
+  state.lives = Math.max(0, state.lives - 1);
   state.status = "hit";
   state.hitBy = enemy.id;
   state.hitCount += 1;
+  state.vulnerableTicks = 0;
+  updateEnemyModes(state);
+  if (state.lives === 0) state.status = "game-over";
   return true;
+}
+
+export function activatePowerUp(state) {
+  state.vulnerableTicks = vulnerableDurationTicks;
+  updateEnemyModes(state);
+}
+
+export function tickVulnerableTimer(state) {
+  if (state.vulnerableTicks === 0) return false;
+
+  state.vulnerableTicks -= 1;
+  if (state.vulnerableTicks === 0) updateEnemyModes(state);
+  return true;
+}
+
+export function eatVulnerableEnemies(state, collidedEnemies) {
+  const collidedIds = new Set(collidedEnemies.map((enemy) => enemy.id));
+  state.score += vulnerableEnemyScore * collidedIds.size;
+  state.eatenCount += collidedIds.size;
+  state.enemies = state.enemies.map((enemy) => {
+    if (!collidedIds.has(enemy.id)) return enemy;
+
+    const config = getEnemyConfig(enemy.id);
+    return {
+      ...enemy,
+      tile: { ...config.startTile },
+      mode: getEnemyMode(state, config)
+    };
+  });
 }
 
 export function chooseChaseTile(state, tile) {
@@ -128,6 +182,28 @@ export function chooseRoamTile(state, enemy) {
 
   const index = (state.enemyStep + enemy.roamOffset) % legalTiles.length;
   return legalTiles[index];
+}
+
+export function resetActorsForNextLife(state) {
+  state.playerTile = { ...characterConfig.player.startTile };
+  state.enemies = createInitialEnemies();
+  state.enemyStep = 0;
+  state.vulnerableTicks = 0;
+  state.hitBy = null;
+}
+
+export function updateEnemyModes(state) {
+  state.enemies = state.enemies.map((enemy) => {
+    const character = getEnemyConfig(enemy.id);
+    return {
+      ...enemy,
+      mode: getEnemyMode(state, character)
+    };
+  });
+}
+
+export function getEnemyMode(state, character) {
+  return state.vulnerableTicks > 0 && state.status === "live" ? "vulnerable" : character.behavior;
 }
 
 export function getLegalNeighbors(tile) {
@@ -183,6 +259,8 @@ export function getPublicState(state) {
     collectedCount: state.collectedTiles.size,
     totalCollectibles,
     hitBy: state.hitBy,
-    hitCount: state.hitCount
+    hitCount: state.hitCount,
+    vulnerableTicks: state.vulnerableTicks,
+    eatenCount: state.eatenCount
   };
 }

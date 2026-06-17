@@ -58,6 +58,7 @@ export const colors = {
   wallEdge: 0x6fd6ff,
   dot: 0xffe66d,
   power: 0xff7ac8,
+  vulnerable: 0x6fd6ff,
   dark: 0x02020a,
   black: 0x050510,
   clear: 0x7cff6b

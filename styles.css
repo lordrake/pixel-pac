@@ -224,6 +224,15 @@ h1 {
   border-color: var(--cyan);
 }
 
+.enemy-card.mode-vulnerable {
+  border-color: var(--power);
+}
+
+.enemy-card.mode-vulnerable .swatch {
+  background: var(--cyan);
+  box-shadow: inset 0 0 0 4px var(--power);
+}
+
 .enemy-roster {
   display: grid;
   gap: 8px;
@@ -283,7 +292,16 @@ h1 {
   background: #7cff6b;
 }
 
+.is-vulnerable .status-pill {
+  background: var(--power);
+}
+
 .is-hit .status-pill {
+  color: var(--ink);
+  background: var(--red);
+}
+
+.is-game-over .status-pill {
   color: var(--ink);
   background: var(--red);
 }

@@ -1,14 +1,19 @@
 import assert from "node:assert/strict";
 import {
+  checkPlayerEnemyCollision,
+  collectCurrentTile,
   createInitialState,
   getDistance,
   getPublicState,
   isWall,
   movePlayer,
+  restartRound,
   startRound,
-  tickEnemies
+  tickEnemies,
+  vulnerableDurationTicks,
+  vulnerableEnemyScore
 } from "../src/gameState.js";
-import { mazeMap } from "../src/gameData.js";
+import { characterConfig, mazeMap } from "../src/gameData.js";
 
 const directions = [
   { code: "ArrowUp", vector: { x: 0, y: -1 } },
@@ -53,9 +58,61 @@ for (let index = 0; index < 6 && hitState.status !== "hit"; index += 1) {
 }
 assert.equal(hitState.status, "hit");
 assert.equal(hitState.hitCount, 1);
+assert.equal(hitState.lives, 2);
 const hitTile = { ...hitState.playerTile };
 movePlayer(hitState, { x: 0, y: -1 });
 assert.deepEqual(hitState.playerTile, hitTile, "player should not move after hit");
+const scoreAfterHit = hitState.score;
+startRound(hitState);
+assert.equal(hitState.status, "live");
+assert.equal(hitState.lives, 2);
+assert.equal(hitState.score, scoreAfterHit);
+assert.deepEqual(hitState.playerTile, characterConfig.player.startTile);
+
+const powerState = startRound(createInitialState());
+powerState.playerTile = { x: 1, y: 1 };
+assert.equal(collectCurrentTile(powerState), true);
+assert.equal(powerState.vulnerableTicks, vulnerableDurationTicks);
+assert.equal(powerState.score, 50);
+assert.equal(powerState.enemies.every((enemy) => enemy.mode === "vulnerable"), true);
+powerState.enemies[0].tile = { ...powerState.playerTile };
+assert.equal(checkPlayerEnemyCollision(powerState), true);
+assert.equal(powerState.status, "live");
+assert.equal(powerState.lives, 3);
+assert.equal(powerState.score, 50 + vulnerableEnemyScore);
+assert.equal(powerState.eatenCount, 1);
+assert.deepEqual(powerState.enemies[0].tile, characterConfig.enemies[0].startTile);
+for (let index = 0; index < vulnerableDurationTicks; index += 1) tickEnemies(powerState);
+assert.equal(powerState.vulnerableTicks, 0);
+assert.equal(powerState.enemies.every((enemy) => enemy.mode !== "vulnerable"), true);
+
+const gameOverState = startRound(createInitialState());
+for (let index = 0; index < 3; index += 1) {
+  gameOverState.status = "live";
+  gameOverState.enemies[0].tile = { ...gameOverState.playerTile };
+  checkPlayerEnemyCollision(gameOverState);
+  if (gameOverState.status === "hit") startRound(gameOverState);
+}
+assert.equal(gameOverState.status, "game-over");
+assert.equal(gameOverState.lives, 0);
+
+const resetState = restartRound(gameOverState);
+assert.equal(resetState.status, "reset");
+assert.equal(resetState.score, 0);
+assert.equal(resetState.lives, 3);
+assert.equal(resetState.collectedTiles.size, 0);
+assert.equal(resetState.vulnerableTicks, 0);
+
+const finalPowerState = startRound(createInitialState());
+const finalPowerTile = { x: 1, y: 1 };
+for (const tile of getCollectibleTiles()) {
+  if (getTileKey(tile) !== getTileKey(finalPowerTile)) finalPowerState.collectedTiles.add(getTileKey(tile));
+}
+finalPowerState.playerTile = finalPowerTile;
+assert.equal(collectCurrentTile(finalPowerState), true);
+assert.equal(finalPowerState.status, "clear");
+assert.equal(finalPowerState.vulnerableTicks, 0);
+assert.equal(finalPowerState.enemies.every((enemy) => enemy.mode !== "vulnerable"), true);
 
 const clearState = startRound(createInitialState());
 clearState.enemies = [];
