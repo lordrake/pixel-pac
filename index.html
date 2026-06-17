@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pixel Pac</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="arcade-shell" aria-labelledby="game-title">
+      <header class="hud" aria-label="Game status">
+        <div>
+          <p class="hud-label">Score</p>
+          <p id="score" class="hud-value">0000</p>
+        </div>
+        <div class="title-lockup">
+          <h1 id="game-title">Pixel Pac</h1>
+          <p id="game-status" class="status-pill">Ready</p>
+        </div>
+        <div>
+          <p class="hud-label">Lives</p>
+          <p id="lives" class="hud-value">3</p>
+        </div>
+      </header>
+
+      <section class="game-stage" aria-label="Game board preview">
+        <div id="board" class="board" aria-hidden="true"></div>
+        <div class="character-strip" aria-label="Characters">
+          <div id="player-card" class="character-card"></div>
+          <div id="enemy-roster" class="enemy-roster"></div>
+        </div>
+      </section>
+
+      <nav class="controls" aria-label="Round controls">
+        <button id="start-button" type="button">Start</button>
+        <button id="restart-button" type="button">Restart</button>
+      </nav>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>

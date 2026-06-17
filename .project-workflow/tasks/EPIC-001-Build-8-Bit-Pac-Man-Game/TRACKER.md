@@ -2,7 +2,7 @@
 
 | ID | Title | Status | Type | Parent ACs | Docs | Branch | Notes |
 |---|---|---|---|---|---|---|---|
-| TASK-001 | Project foundation and game shell | In Progress | Task | AC1, AC3, AC4, AC7 | tasks/EPIC-001-Build-8-Bit-Pac-Man-Game/TASK-001-Project-Foundation-And-Game-Shell/IMPLEMENTATION.md |  | Establish browser game scaffold, 8-bit presentation baseline, placeholder character identity boundary, start/restart shell, and validation conventions. |
+| TASK-001 | Project foundation and game shell | Testing | Task | AC1, AC3, AC4, AC7 | tasks/EPIC-001-Build-8-Bit-Pac-Man-Game/TASK-001-Project-Foundation-And-Game-Shell/IMPLEMENTATION.md |  | Establish browser game scaffold, 8-bit presentation baseline, placeholder character identity boundary, start/restart shell, and validation conventions. |
 | TASK-002 | Maze, movement, dots, and round states | In Progress | Task | AC1, AC2, AC7 | tasks/EPIC-001-Build-8-Bit-Pac-Man-Game/TASK-002-Maze-Movement-Dots-And-Round-States/IMPLEMENTATION.md |  | Build playable maze traversal, wall collision, dot collection, scoring hooks, and win/loss state foundations. |
 | TASK-003 | Enemy behaviors and collision rules | In Progress | Task | AC2, AC5, AC7 | tasks/EPIC-001-Build-8-Bit-Pac-Man-Game/TASK-003-Enemy-Behaviors-And-Collision-Rules/IMPLEMENTATION.md |  | Add fair enemy pressure through roam/chase movement, player collision, and state-driven interaction rules. |
 | TASK-004 | Power-ups, lives, score, and restart loop | In Progress | Task | AC1, AC2, AC5, AC7 | tasks/EPIC-001-Build-8-Bit-Pac-Man-Game/TASK-004-Power-Ups-Lives-Score-And-Restart-Loop/IMPLEMENTATION.md |  | Complete the round loop with power-ups, vulnerable enemies, lives, score changes, win, loss, and restart. |

@@ -22,11 +22,11 @@ Build the smallest static web game surface first: page structure, game container
 
 ## Acceptance Criteria
 
-- [ ] AC1: Game shell loads locally.
-- [ ] AC2: Start/restart state transitions are visible.
-- [ ] AC3: 8-bit styling is crisp and readable.
-- [ ] AC4: Placeholder character identity data is separate from game-state logic.
-- [ ] AC5: Parent AC evidence is recorded.
+- [x] AC1: Game shell loads locally.
+- [x] AC2: Start/restart state transitions are visible.
+- [x] AC3: 8-bit styling is crisp and readable.
+- [x] AC4: Placeholder character identity data is separate from game-state logic.
+- [x] AC5: Parent AC evidence is recorded.
 
 ## Validation
 
@@ -40,15 +40,18 @@ Build the smallest static web game surface first: page structure, game container
 
 | ID | Title | Description | Acceptance Criteria | User Verification | Status |
 | --: | ----- | ----------- | ------------------- | ----------------- | ------ |
-| 1 | Create game shell | Add the first runnable browser screen with HUD placeholders and game area. | AC1: Shell loads locally | Open the game in a browser | To Do |
-| 2 | Add state controls | Add start and restart interactions that update visible game state. | AC2: State transitions are visible | Click start/restart and observe state | To Do |
-| 3 | Apply 8-bit baseline | Style the shell with crisp, low-detail arcade visuals. | AC3: Styling matches constitution | Inspect desktop viewport | To Do |
-| 4 | Establish character boundary | Add placeholder player/enemy identity data separate from state logic. | AC4: Identity data is separate | Review config/state separation | To Do |
-| 5 | Record evidence | Add validation notes after implementation. | AC5: Parent evidence exists | Review this file before QA | To Do |
+| 1 | Create game shell | Add the first runnable browser screen with HUD placeholders and game area. | AC1: Shell loads locally | Open the game in a browser | Done |
+| 2 | Add state controls | Add start and restart interactions that update visible game state. | AC2: State transitions are visible | Click start/restart and observe state | Done |
+| 3 | Apply 8-bit baseline | Style the shell with crisp, low-detail arcade visuals. | AC3: Styling matches constitution | Inspect desktop viewport | Done |
+| 4 | Establish character boundary | Add placeholder player/enemy identity data separate from state logic. | AC4: Identity data is separate | Review config/state separation | Done |
+| 5 | Record evidence | Add validation notes after implementation. | AC5: Parent evidence exists | Review this file before QA | Done |
 
 ## Parent AC Evidence
 
-- AC1, AC3, AC4, AC7: Pending implementation evidence.
+- AC1: `index.html` loads through the local static server at `http://127.0.0.1:4173/` with HTTP 200, and the scripted behavior check confirms the 15x15 shell board renders.
+- AC3: `styles.css` defines the crisp 8-bit visual baseline using hard-edged tiles, pixel-style silhouettes, strong contrast, and no gradients, 3D, or high-fidelity effects.
+- AC4: `game.js` defines `characterConfig` separately from `initialGameState`, with placeholder player and enemy identities consumed by rendering.
+- AC7: Validation evidence recorded here after `node --check game.js`, localhost HTTP check, and scripted start/restart behavior check passed.
 
 ## QA & Code Review
 
