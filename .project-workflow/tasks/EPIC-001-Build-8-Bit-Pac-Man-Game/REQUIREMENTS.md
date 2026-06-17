@@ -53,6 +53,7 @@ Deliver the first playable version of an 8-bit Pac-Man-inspired browser game whe
 - Fancy graphics, 3D visuals, and high-fidelity art are intentionally out of scope.
 - The first playable version will use simple 8-bit pixel-shape character rendering and a configuration model, so names/colors can be swapped without waiting on final sprite art.
 - Initial custom character names may be placeholders until the project owner supplies final character identities.
+- The foundation task should introduce the character identity boundary early, even if the full custom character presentation work is completed in a later task.
 
 ## Validation Plan
 
