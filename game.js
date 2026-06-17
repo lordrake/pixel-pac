@@ -7,10 +7,10 @@ const characterConfig = {
     startTile: { x: 7, y: 11 }
   },
   enemies: [
-    { id: "blink", name: "Blink", role: "Chaser", color: "#ff4d4d", startTile: { x: 7, y: 5 } },
-    { id: "byte", name: "Byte", role: "Roamer", color: "#4df3ff", startTile: { x: 6, y: 7 } },
-    { id: "glitch", name: "Glitch", role: "Trickster", color: "#ff7abf", startTile: { x: 8, y: 7 } },
-    { id: "zap", name: "Zap", role: "Ambusher", color: "#ff9d3d", startTile: { x: 7, y: 8 } }
+    { id: "blink", name: "Blink", role: "Chaser", behavior: "chase", color: "#ff4d4d", startTile: { x: 7, y: 5 } },
+    { id: "byte", name: "Byte", role: "Roamer", behavior: "roam", color: "#4df3ff", startTile: { x: 6, y: 7 } },
+    { id: "glitch", name: "Glitch", role: "Trickster", behavior: "roam", color: "#ff7abf", startTile: { x: 8, y: 7 } },
+    { id: "zap", name: "Zap", role: "Ambusher", behavior: "chase", color: "#ff9d3d", startTile: { x: 7, y: 8 } }
   ]
 };
 
@@ -19,10 +19,15 @@ const initialGameState = {
   score: 0,
   lives: 3,
   playerTile: { ...characterConfig.player.startTile },
-  collectedTiles: new Set()
+  collectedTiles: new Set(),
+  enemies: [],
+  enemyStep: 0,
+  hitBy: null,
+  hitCount: 0
 };
 
 let gameState = createInitialGameState();
+let enemyTimer = null;
 
 const shell = document.querySelector(".arcade-shell");
 const board = document.querySelector("#board");
@@ -53,6 +58,13 @@ const mazeMap = [
 ];
 
 const totalCollectibles = countCollectibles();
+const enemyStepMs = 650;
+const directions = [
+  { x: 0, y: -1 },
+  { x: -1, y: 0 },
+  { x: 1, y: 0 },
+  { x: 0, y: 1 }
+];
 const movementKeys = {
   ArrowUp: { x: 0, y: -1 },
   KeyW: { x: 0, y: -1 },
@@ -68,8 +80,23 @@ function createInitialGameState() {
   return {
     ...initialGameState,
     playerTile: { ...characterConfig.player.startTile },
-    collectedTiles: new Set()
+    collectedTiles: new Set(),
+    enemies: createInitialEnemies(),
+    enemyStep: 0,
+    hitBy: null,
+    hitCount: 0
   };
+}
+
+function createInitialEnemies() {
+  return characterConfig.enemies.map((enemy, index) => {
+    return {
+      id: enemy.id,
+      tile: { ...enemy.startTile },
+      mode: enemy.behavior,
+      roamOffset: index
+    };
+  });
 }
 
 function renderBoard() {
@@ -85,9 +112,10 @@ function renderBoard() {
         tile.appendChild(createSprite(characterConfig.player, "player-sprite"));
       }
 
-      const enemy = characterConfig.enemies.find((item) => item.startTile.x === x && item.startTile.y === y);
+      const enemy = gameState.enemies.find((item) => item.tile.x === x && item.tile.y === y);
       if (enemy) {
-        tile.appendChild(createSprite(enemy));
+        const enemyConfig = getEnemyConfig(enemy.id);
+        tile.appendChild(createSprite(enemyConfig, `enemy-sprite mode-${enemy.mode}`));
       }
 
       board.appendChild(tile);
@@ -112,52 +140,66 @@ function createSprite(character, extraClass = "") {
 
 function renderCharacters() {
   playerCard.replaceChildren(createCharacterBadgeContent(characterConfig.player));
-  enemyRoster.replaceChildren(...characterConfig.enemies.map(createEnemyCard));
+  enemyRoster.replaceChildren(...gameState.enemies.map(createEnemyCard));
 }
 
-function createEnemyCard(character) {
+function createEnemyCard(enemyState) {
+  const character = getEnemyConfig(enemyState.id);
   const card = document.createElement("div");
-  card.className = "enemy-card";
-  card.append(createCharacterBadgeContent(character));
+  card.className = `enemy-card mode-${enemyState.mode}`;
+  card.append(createCharacterBadgeContent(character, enemyState.mode));
   return card;
 }
 
-function createCharacterBadgeContent(character) {
+function createCharacterBadgeContent(character, mode = "") {
   const fragment = document.createDocumentFragment();
   const swatch = document.createElement("span");
   const text = document.createElement("span");
   const name = document.createElement("span");
   const role = document.createElement("span");
+  const modeLabel = document.createElement("span");
 
   swatch.className = "swatch";
   swatch.style.setProperty("--sprite-color", character.color);
   text.className = "character-text";
   name.className = "name";
   role.className = "role";
+  modeLabel.className = "mode-label";
 
   name.textContent = character.name;
   role.textContent = character.role;
+  modeLabel.textContent = mode;
 
   text.append(name, role);
+  if (mode) text.append(modeLabel);
   fragment.append(swatch, text);
   return fragment;
 }
 
 function startRound() {
+  if (gameState.status === "clear" || gameState.status === "hit") {
+    gameState = createInitialGameState();
+  }
+
   gameState = {
     ...gameState,
     status: "live"
   };
   collectCurrentTile();
+  checkPlayerEnemyCollision();
   renderBoard();
+  renderCharacters();
   renderState();
+  startEnemyLoop();
   board.focus();
 }
 
 function restartRound() {
+  stopEnemyLoop();
   gameState = createInitialGameState();
   gameState.status = "reset";
   renderBoard();
+  renderCharacters();
   renderState();
   board.focus();
 }
@@ -169,12 +211,14 @@ function renderState() {
   shell.classList.toggle("is-live", gameState.status === "live");
   shell.classList.toggle("is-reset", gameState.status === "reset");
   shell.classList.toggle("is-clear", gameState.status === "clear");
+  shell.classList.toggle("is-hit", gameState.status === "hit");
 }
 
 function getStatusText(status) {
   if (status === "live") return "Round Live";
   if (status === "reset") return "Reset";
   if (status === "clear") return "Maze Clear";
+  if (status === "hit") return "Player Hit";
   return "Ready";
 }
 
@@ -187,6 +231,8 @@ function handleKeyDown(event) {
 }
 
 function movePlayer(direction) {
+  if (gameState.status !== "live") return;
+
   const nextTile = {
     x: gameState.playerTile.x + direction.x,
     y: gameState.playerTile.y + direction.y
@@ -196,6 +242,7 @@ function movePlayer(direction) {
 
   gameState.playerTile = nextTile;
   collectCurrentTile();
+  if (checkPlayerEnemyCollision()) return;
   renderBoard();
   renderState();
 }
@@ -212,7 +259,98 @@ function collectCurrentTile() {
 
   if (gameState.collectedTiles.size === totalCollectibles) {
     gameState.status = "clear";
+    stopEnemyLoop();
   }
+}
+
+function startEnemyLoop() {
+  stopEnemyLoop();
+  enemyTimer = setInterval(tickEnemies, enemyStepMs);
+}
+
+function stopEnemyLoop() {
+  if (!enemyTimer) return;
+  clearInterval(enemyTimer);
+  enemyTimer = null;
+}
+
+function tickEnemies() {
+  if (gameState.status !== "live") return;
+
+  gameState.enemyStep += 1;
+  gameState.enemies = gameState.enemies.map(moveEnemy);
+
+  if (checkPlayerEnemyCollision()) return;
+
+  renderBoard();
+  renderCharacters();
+  renderState();
+}
+
+function moveEnemy(enemy) {
+  const character = getEnemyConfig(enemy.id);
+  const mode = character.behavior;
+  const nextTile = mode === "chase" ? chooseChaseTile(enemy.tile) : chooseRoamTile(enemy);
+
+  return {
+    ...enemy,
+    mode,
+    tile: nextTile
+  };
+}
+
+function chooseChaseTile(tile) {
+  const legalTiles = getLegalNeighbors(tile);
+  if (legalTiles.length === 0) return tile;
+
+  return legalTiles.reduce((best, candidate) => {
+    const bestDistance = getDistance(best, gameState.playerTile);
+    const candidateDistance = getDistance(candidate, gameState.playerTile);
+    return candidateDistance < bestDistance ? candidate : best;
+  });
+}
+
+function chooseRoamTile(enemy) {
+  const legalTiles = getLegalNeighbors(enemy.tile);
+  if (legalTiles.length === 0) return enemy.tile;
+
+  const index = (gameState.enemyStep + enemy.roamOffset) % legalTiles.length;
+  return legalTiles[index];
+}
+
+function getLegalNeighbors(tile) {
+  return directions
+    .map((direction) => {
+      return {
+        x: tile.x + direction.x,
+        y: tile.y + direction.y
+      };
+    })
+    .filter((candidate) => !isWall(candidate));
+}
+
+function checkPlayerEnemyCollision() {
+  const enemy = gameState.enemies.find((item) => {
+    return item.tile.x === gameState.playerTile.x && item.tile.y === gameState.playerTile.y;
+  });
+
+  if (!enemy) return false;
+
+  handlePlayerHit(enemy);
+  return true;
+}
+
+function handlePlayerHit(enemy) {
+  stopEnemyLoop();
+  gameState = {
+    ...gameState,
+    status: "hit",
+    hitBy: enemy.id,
+    hitCount: gameState.hitCount + 1
+  };
+  renderBoard();
+  renderCharacters();
+  renderState();
 }
 
 function isWall(tile) {
@@ -225,6 +363,14 @@ function getCell(tile) {
 
 function getTileKey(tile) {
   return `${tile.x},${tile.y}`;
+}
+
+function getDistance(a, b) {
+  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+}
+
+function getEnemyConfig(id) {
+  return characterConfig.enemies.find((enemy) => enemy.id === id);
 }
 
 function countCollectibles() {
@@ -244,12 +390,22 @@ if (typeof window !== "undefined") {
       score: gameState.score,
       lives: gameState.lives,
       playerTile: { ...gameState.playerTile },
+      enemies: gameState.enemies.map((enemy) => {
+        return {
+          id: enemy.id,
+          mode: enemy.mode,
+          tile: { ...enemy.tile }
+        };
+      }),
       collectedCount: gameState.collectedTiles.size,
-      totalCollectibles
+      totalCollectibles,
+      hitBy: gameState.hitBy,
+      hitCount: gameState.hitCount
     }),
     movePlayer,
     restartRound,
-    startRound
+    startRound,
+    tickEnemies
   };
 }
 
