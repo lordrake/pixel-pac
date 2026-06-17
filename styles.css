@@ -140,6 +140,11 @@ h1 {
   background: #02020a;
 }
 
+.board:focus-visible {
+  outline: 4px solid var(--dot);
+  outline-offset: 4px;
+}
+
 .tile {
   position: relative;
   min-width: 0;
@@ -250,6 +255,10 @@ h1 {
 
 .is-reset .status-pill {
   background: var(--power);
+}
+
+.is-clear .status-pill {
+  background: #7cff6b;
 }
 
 @media (max-width: 720px) {
